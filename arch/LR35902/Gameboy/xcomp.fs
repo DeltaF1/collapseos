@@ -8,11 +8,9 @@ RS_ADDR 0xb0 - CONSTANT SYSVARS ( Store the sysvars 0xb0 before the stack )
 SYSVARS 0xa0 + CONSTANT SERIAL_BUFFER ( 0xa long buffer)
 SYSVARS 0xaa + CONSTANT PS2_MEM
 
-( a b -- x )
+( high low -- checksum )
 : CHECKSUM 0 ROT> DO I C@ - 1- 255 AND LOOP ; 
 : DUMP DO I C@ DUP DUP .x ." :" EMIT NL> LOOP ;
-
-VARIABLE lblentrypoint
 
 5 LOAD ( LR35902 assembler )
 280 LOAD
@@ -38,15 +36,16 @@ NOP, JR, 0x4d C, NOP,  ( jump to addr 0x150 on boot )
 ," COLLAPSE OS" ( Title )
 ," AREJ" ( Manufacturer )
 0xc0 C, ( CGB Flag )
-0x2 ALLOT0 ( 0x145 )
+0x2 ALLOT0 ( Licensee code )
 0x00 C, ( SGB Flag )
 ( TODO: Set proper banking size )
 0x00 C, ( Cartridge type )
 0x00 C, ( ROM Size )
+
 0x00 C, ( RAM Size )
 0x00 C, ( Region )
-0x33 C, ( Use 4-char license code )
-0x00 C, ( 0x14D )
+0x33 C, ( Use 4-char manufacturer code )
+0x00 C, ( Version number )
 
 ORG @ 0x14d + ORG @ 0x134 + CHECKSUM C, ( Header checksum )
 
@@ -60,4 +59,5 @@ ORG @ 0x14d + ORG @ 0x134 + CHECKSUM C, ( Header checksum )
 ??? ??? LOADR ( serial PS/2 driver )
 246 249 LOADR ( PS/2 Key system )
 236 239 LOADR ( forth high )
+( Reset the ORG pointer so that the resulting ROM binary starts at the start of the header )
 ORG @ 0x150 - ORG !
