@@ -2309,8 +2309,8 @@ CREATE _idat
   ( bit 6, enable display, bit 7, ?? ) 0x81c0 _ctl ;
 : COLS 32 ; : LINES 24 ;
 ( ----- 335 )
-( SMS pad driver. See doc/hw/z80/sms/pad.txt.
-  Load range: 335-338 )
+( SMS pad driver. See doc/hw/z80/sms/pad.txt. )
+( Load range: 335-338 )
 : _prevstat [ PAD_MEM LITN ] ;
 : _sel [ PAD_MEM 1+ LITN ] ;
 : _next [ PAD_MEM 2 + LITN ] ;
@@ -2424,8 +2424,8 @@ CODE _THB! 1 chkPS, HL POP, ( B0 -> B7, B1 -> B3 )
 CODE _D1@ CPORT_D1 INAi, PUSHA, ;CODE
 CODE _D2@ CPORT_D2 INAi, PUSHA, ;CODE
 ( ----- 350 )
-( TI-84+ LCD driver. See doc/hw/z80/ti84/lcd.txt
-  Load range: 350-353 )
+( TI-84+ LCD driver. See doc/hw/z80/ti84/lcd.txt )
+( Load range: 350-353 )
 : _mem+ [ LCD_MEM LITN ] @ + ;
 : FNTW 3 ; : FNTH 5 ;
 : COLS 96 FNTW 1+ / ; : LINES 64 FNTH 1+ / ;
