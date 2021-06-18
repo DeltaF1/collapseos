@@ -52,12 +52,16 @@ ORG @ 0x14d + ORG @ 0x134 + CHECKSUM C, ( Header checksum )
 0x2 ALLOT0  ( Unused Global checksum )
 
 ( Start Collapse OS at 0x14F )
-0x14f BIN( !
-281 300 LOADR ( boot.z80 )
-??? ??? LOADR ( LR35902  core )
-210 227 LOADR ( forth low no BLK )
-??? ??? LOADR ( serial PS/2 driver )
-246 249 LOADR ( PS/2 Key system )
-236 239 LOADR ( forth high )
+\ 0x14f BIN( !
+\ 281 300 LOADR ( boot.z80 )
+\ ??? ??? LOADR ( LR35902  core )
+\ 210 227 LOADR ( forth low no BLK )
+\ ??? ??? LOADR ( serial PS/2 driver )
+\ 246 249 LOADR ( PS/2 Key system )
+\ 236 239 LOADR ( forth high )
+NOP,
+A 100 LDri,
+25 ADDi,
+HALT,
 ( Reset the ORG pointer so that the resulting ROM binary starts at the start of the header )
-ORG @ 0x150 - ORG !
+\ ORG @ 0x150 - ORG !
