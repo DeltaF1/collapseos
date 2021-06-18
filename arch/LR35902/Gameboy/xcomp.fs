@@ -12,19 +12,21 @@ SYSVARS 0xaa + CONSTANT PS2_MEM
 : CHECKSUM 0 ROT> DO I C@ - 1- 255 AND LOOP ; 
 : DUMP DO I C@ DUP DUP .x ." :" EMIT NL> LOOP ;
 
-5 LOAD ( LR35902 assembler )
-280 LOAD
+60 LOAD ( LR35902 assembler )
+: nNOP, 0 DO NOP, LOOP ;
+: VECNT 3 PC + JP, 4 nNOP, RETI, ; ( Writes one vector table entry )
+: VECTABLE 13 0 DO VECNT LOOP ; ( Creates vector table [must be a function or else DO LOOPs will not work] )
+\ 280 LOAD
 200 205 LOADR ( xcomp )
 HERE ORG !
 
 ( Gameboy Header )
-0x40 ALLOT0
-( TODO: Could we put the ABI in these first 40 bytes? )
-( TODO: Interrupt vector )
-0x20 ALLOT0 ( 0x60 )
+( Vector table )
+VECTABLE
+( 0x68 )
 
 ( Padding )
-0xa0 ALLOT0 ( 0x100 )
+0x98 ALLOT0 ( 0x100 )
 
 NOP, JR, 0x4d C, NOP,  ( jump to addr 0x150 on boot )
 
