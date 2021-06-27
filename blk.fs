@@ -593,8 +593,13 @@ CREATE wbr 0 C, ( wide BR? ) : wbr? wbr C@ 0 wbr C! ;
 1 10 LOADR+ ( Load subsequent blocks )
 
 ( ----- 061 )
-13 CONSTS A 7 B 0 C 1 D 2 E 3 H 4 L 5 (HL) 6
+18 CONSTS A 7 B 0 C 1 D 2 E 3 H 4 L 5 (HL) 6
           BC 0 DE 1 HL 2 AF 3 SP 3
+          V_BLANK_INT   0x40
+          LCD_STAT_INT  0x48
+          TIMER_INT     0x50
+          SERIAL_INT    0x58
+          JOYPAD_INT    0x60
 
 ( ----- 062 )
 : OP1 CREATE C, DOES> C@ C, ;
@@ -634,34 +639,40 @@ CREATE wbr 0 C, ( wide BR? ) : wbr? wbr C@ 0 wbr C! ;
 : LDrr, ( rd rr ) SWAP <<3 OR 0x40 OR C, ;
 
 : LDri, ( r i ) SWAP <<3 0x06 OR C, C, ;
-: LDdi, ( d n ) SWAP <<4 0x01 OR C, T, ;
-: LDd(i), ( d i ) 0xed C, SWAP <<4 0x4b OR C, T, ;
-: LD(i)d, ( i d ) 0xed C, <<4 0x43 OR C, T, ;
+: LDdn, ( d n ) SWAP <<4 0x01 OR C, T, ;
 
-: LD(nn)SP, ( nn ) 0x08 C, T, ;
+: LD(n)SP, ( n ) 0x08 C, T, ;
+: LD(n)A, ( n ) 0xea C, T, ;
+: LDA(n), ( n ) 0xfa C, T, ;
+: LD(d)A, ( d ) <<4 0x02 OR C, ;
+: LDA(d), ( d ) <<4 0x0a OR C, ;
+
 ( ----- 066 )
+0x22 OP1 LD(HL+)A,             0x2a OP1 LDA(HL+),
+0x32 OP1 LD(HL-)A,             0x3a OP1 LDA(HL-),
+
+
 : OP2i CREATE C, DOES> C@ ( i op ) C, C, ;
 0xc6 OP2i ADDi,      0xce OP2i ADCi,     0xde OP2i SBCi,
 0xe6 OP2i ANDi,      0xf6 OP2i ORi,      0xd6 OP2i SUBi,
 0xee OP2i XORi,      0xfe OP2i CPi,
 
+
 : OP2br CREATE C, DOES>
     0xcb C, C@ ( b r op ) ROT <<3 OR OR C, ;
 0xc0 OP2br SET,      0x80 OP2br RES,     0x40 OP2br BIT,
+( ----- 067 )
 \ bitwise rotation ops have a similar sig
 : OProt CREATE C, DOES> 0xcb C, C@ ( r op ) OR C, ;
 0x10 OProt RL,       0x00 OProt RLC,     0x18 OProt RR,
 0x08 OProt RRC,      0x20 OProt SLA,     0x38 OProt SRL,
 
-( ----- 067 )
+
 : OP3i CREATE C, DOES> C@ ( i op ) C, T, ;
 0xcd OP3i CALL,                0xc3 OP3i JP,
+
 : CALLc, SWAP <<3 0xc4 OR C, T, ;
 : JPc, SWAP <<3 0xc2 OR C, T, ;
-
-0x22 OP1 LD(HL+)A,             0x2a OP1 LDA(HL+),
-0x32 OP1 LD(HL-)A,             0x3a OP1 LDA(HL-),
-
 : RST, 0xc7 OR C, ;
 
 : ;CODE lblnext@ JP, ;
@@ -694,9 +705,9 @@ CREATE wbr 0 C, ( wide BR? ) : wbr? wbr C@ 0 wbr C! ;
 
 ( ----- 070 )
 \ Macros
-: PUSH0, BC 0 LDdi, BC PUSH, ;
-: PUSH1, BC 1 LDdi, BC PUSH, ;
-: PUSHZ, BC 0 LDdi, IFZ, BC INCd, THEN, BC PUSH, ;
+: PUSH0, BC 0 LDdn, BC PUSH, ;
+: PUSH1, BC 1 LDdn, BC PUSH, ;
+: PUSHZ, BC 0 LDdn, IFZ, BC INCd, THEN, BC PUSH, ;
 : PUSHA, B 0 LDri, C A LDrr, BC PUSH, ;
 : HLZ, A H LDrr, L ORr, ;
 : DEZ, A D LDrr, E ORr, ;
@@ -1666,6 +1677,19 @@ VARIABLE _w VARIABLE _h
     _h @ ALLOT0 ( space char )
     276 271 DO I BLK@ BLK( 9 _l 448 + 9 _l DROP LOOP ( 90 )
     276 BLK@ BLK( 4 _l DROP ( 94! ) ;
+( ----- 264 )
+( GB format Compiler )
+VARIABLE _w VARIABLE _h
+: _g ( given a top-left of dot-X in BLK(, spit H bin lines )
+    _h @ 0 DO
+    0 _w @ 0 DO ( a r )
+        << OVER J 64 * I + + C@ 'X' = IF 1+ THEN
+    LOOP 8 _w @ - LSHIFT DUP C, C, LOOP DROP
+    8 _h @ - 0 DO 0x00 DUP C, C, LOOP ;
+: _l ( a u -- a, spit a line of u glyphs )
+    ( u ) 0 DO ( a )
+        DUP I _w @ * + _g
+    LOOP ;
 ( ----- 265 )
 .X.X.XX.X.XXX...X..X...XX...X...............X.X..X.XX.XX.X.XXXX
 .X.X.XXXXXX...XX.X.X..X..X.XXX.X............XX.XXX...X..XX.XX..
