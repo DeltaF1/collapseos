@@ -74,7 +74,7 @@ ORG @ 0x14d + ORG @ 0x134 + CHECKSUM C, ( Header checksum )
 
 ( Start Collapse OS at 0x14F )
 0x14f BIN( !
-470 474 LOADR ( LR35902 boot code )
+470 475 LOADR ( LR35902 boot code )
 \ 210 227 LOADR ( forth low no BLK )
 \ ??? ??? LOADR ( serial PS/2 driver )
 \ 246 249 LOADR ( PS/2 Key system )

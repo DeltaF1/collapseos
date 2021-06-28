@@ -3114,3 +3114,86 @@ CODE (key?) ( -- c? f ) CLRA, CLRB, PSHS, D L1 LPC () JSR,
     SWAP 0x400 + C! ELSE 2DROP THEN ;
 : CURSOR! ( new old -- )
   DROP 0x400 + DUP C@ 0x40 XOR SWAP C! ;
+( ----- 470 )
+( ----- LR35902 Boot code )
+( Stable ABI (See impl.txt) )
+JR, L1 FWR NOP, NOP, ( Jump to the BOOT address )
+2 ALLOT0 ( x04 - BOOT address )
+2 ALLOT0 ( x06 - (uflw) address )
+2 ALLOT0 ( x08 - LATEST )
+( LATEST is the last defined word in the binary blob )
+2 ALLOT0 ( x0a - (main) address )
+3 ALLOT0 ( x0c - QUIT code )
+4 ALLOT0 ( x0f - next address )
+\ next is the native routine that handles jumping
+\ to the next word
+2 ALLOT0 ( x13 (oflw) address )
+( ----- 471 )
+L1 FSET
+
+( Set up the Program Stack pointer )
+SP PS_START LDdn, ( Load imm PS_ADDR into SP )
+
+( Set up the Return Stack pointer )
+A 1 LDri,
+RS_START LD(n)A, ( Load 1 into the RS head )
+( RS_START contains an 8-bit head offset from RS_START )
+
+( Set CURRENT to value of LATEST )
+HL BIN( @ 0x08 + LDdn, ( LATEST from ABI )
+LDBC(HL), ( Macro that fetches (HL) into BC by way of A )
+HL SYSVARS 0x02 + LDdn, ( CURRENT from Sysvars )
+LD(HL)BC, ( Macro that stores BC into CURRENT sysvar )
+( ----- 472 )
+( Set HERE to HERESTART )
+HL SYSVARS 0x04 + LDdn, ( HERE )
+BC HERESTART LDdn, ( Get the two bytes of HERESTART )
+LD(HL)BC, ( Write HERESTART to HERE )
+
+( Execute BOOT )
+HL BIN( @ 0x04 + LDdn,
+JR, L1 FWR ( jump to execute )
+( ----- 473 )
+lblexec BSET L1 FSET
+  ( Expect that HL points to a wordref )
+  LDBC(HL), ( Fetch the wordref )
+  LDHLBC, ( Store wordref in HL )
+  LDA(HL+), ( Fetch word type into A, and increment HL )
+  ( HL now points to the contents of the word )
+  ( Jump table to handle word types )
+  ( Each JR instruction takes 2 bytes, so multiply by 2 )
+  RLA, A JRr, ( If word type = 0, jump directly to the code )
+  JP(HL), NOP, ( execute native word )
+  JR, EL1 FWR ( execute compiled word )
+  JR, EL2 FWR ( execute cell word )
+  JR, EL3 FWR ( execute does word )
+  JR, EL4 FWR ( execute alias word )
+  JR, EL5 FWR ( execute ialias word )
+  JR, EL6 FWR ( execute constant word )
+( ----- 474 )
+  ( compiled )
+  EL1 FSET
+    ( Backup IP in DE )
+  LDDEHL,
+  ( Increment the HL to be pushed )
+  BC 2 LDdn, BC ADDHLd, ( Add 2 to HL )
+  LDBCHL, ( Store incremented IP into BC )
+  RS@, ( Set up RS stack )
+  ( PUSH BC onto the stack )
+    HL INCd, ( HL points to empty spot on stack )
+    RS!,
+    ( Push BC and increment )
+    (HL) C LDrr,
+    A B LDrr, LD(HL+)A,
+  ( Swap the original HL back in )
+  LDHLDE,
+( ----- 475 )
+  JR, lblexec BWR ( Jump back to lblexec )
+
+  ( cell )
+  EL2 FSET
+  HL PUSHd, ( push the address of the cell )
+  JR, lblexec BWR ( Jump back to lblexec )
+
+
+HALT,
