@@ -3,7 +3,8 @@ MASTER INDEX
 
 002 Common assembler words    005 Z80 assembler
 020 8086 assembler            030 AVR assembler
-050 6809 assembler            60-99 unused
+050 6809 assembler            060 LR35902 assembler
+071-099 unused
 100 Block editor              110 Visual Editor
 120-149 unused                150 Remote Shell
 160 AVR SPI programmer        165 Sega ROM signer
@@ -14,6 +15,8 @@ MASTER INDEX
 280 Z80 boot code             310 Z80 drivers
 400 8086 boot code            420 8086 drivers
 450 6809 boot code            460 6809 drivers
+( ----- 001 )
+470 LR35902 boot code
 ( ----- 002 )
 ( Common assembler words )
 CREATE ORG 0 ,
@@ -590,7 +593,7 @@ CREATE wbr 0 C, ( wide BR? ) : wbr? wbr C@ 0 wbr C! ;
 ( ----- 060 )
 ( LR35902 Assembler - based on z80 )
 2 4 LOADR ( Common assembler words )
-1 10 LOADR+ ( Load subsequent blocks )
+1 11 LOADR+ ( Load subsequent blocks )
 
 ( ----- 061 )
 18 CONSTS A 7 B 0 C 1 D 2 E 3 H 4 L 5 (HL) 6
@@ -711,9 +714,23 @@ CREATE wbr 0 C, ( wide BR? ) : wbr? wbr C@ 0 wbr C! ;
 : PUSHA, B 0 LDri, C A LDrr, BC PUSH, ;
 : HLZ, A H LDrr, L ORr, ;
 : DEZ, A D LDrr, E ORr, ;
-: LDDE(HL), E (HL) LDrr, HL INCd, D (HL) LDrr, ;
-: LDBC(HL), C (HL) LDrr, HL INCd, B (HL) LDrr, ;
-: LDHL(HL), A (HL) LDrr, HL INCd, H (HL) LDrr, L A LDrr, ;
+: LDrr(HL), ( r2 r1 -- )
+  LDA(HL+), (HL) LDrr, A LDrr, ;
+: LD(HL)rr, ( r2 r1 -- )
+  A LDrr, LD(HL+)A, A LDrr, LD(HL+)A, ;
+: LDDE(HL), E D LDrr(HL), ;
+: LDBC(HL), C B LDrr(HL), ;
+: LDHL(HL), L H LDrr(HL), ;
+( ----- 071 )
+: LD(HL)DE, E D LD(HL)rr, ;
+: LD(HL)BC, C B LD(HL)rr, ;
+: RS@, HL RS_START LDdn, L (HL) LDrr, ;
+: RS!, A L LDrr, RS_START LD(n)A, ;
+
+: LDBCHL, B H LDrr, C L LDrr, ;
+: LDDEHL, D H LDrr, E L LDrr, ;
+: LDHLBC, H B LDrr, L C LDrr, ;
+: LDHLDE, H D LDrr, L E LDrr, ;
 ( ----- 100 )
 ( Block editor. Load with "100 LOAD", see doc/ed.txt )
 CREATE ACC 0 ,
