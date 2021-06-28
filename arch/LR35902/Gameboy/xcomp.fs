@@ -1,12 +1,12 @@
 0xc000 CONSTANT HERESTART ( Start of ram )
 
-0xdfff CONSTANT PS_ADDR ( End of ram )
-0xdeff CONSTANT RS_ADDR ( 0x100 back )
+0xdfff CONSTANT PS_START ( End of ram )
+0xdf00 CONSTANT RS_START ( 0xff back )
 
-RS_ADDR 0xb0 - CONSTANT SYSVARS ( Store the sysvars 0xb0 before the stack )
+RS_START 0xb0 - CONSTANT SYSVARS ( Store the sysvars 0xb0 before the stack )
 
 SYSVARS 0xa0 + CONSTANT SERIAL_BUFFER ( 0xa long buffer )
-SYSVARS 0xaa + CONSTANT PS2_MEM
+\ SYSVARS 0xaa + CONSTANT PS2_MEM
 
 ( high low -- checksum )
 : CHECKSUM 0 ROT> DO I C@ - 1- 255 AND LOOP ; 
@@ -17,12 +17,18 @@ SYSVARS 0xaa + CONSTANT PS2_MEM
 : VECNT 3 PC + JP, 4 nNOP, RETI, ; ( Writes one vector table entry )
 : VECTABLE 13 0 DO VECNT LOOP ; ( Creates vector table [must be a function or else DO LOOPs will not work] )
 
+( TODO - Move this to a hardware def block )
 : rLY 0xff44 ;
 : rLCDC 0xff40 ;
 : rBGP 0xff47 ;
 : rSCY 0xff42 ;
 : rSCX 0xff43 ;
 : rNR52 0xff26 ;
+( Move this somewhere ??? )
+VARIABLE lblexec VARIABLE lbluflw
+VARIABLE lbloflw?
+VARIABLE EL1 VARIABLE EL2 VARIABLE EL3
+VARIABLE EL4 VARIABLE EL5 VARIABLE EL6
 VARIABLE FontStart
 VARIABLE HelloWorldStr
 2048 CONSTANT FontLength
@@ -67,72 +73,11 @@ ORG @ 0x14d + ORG @ 0x134 + CHECKSUM C, ( Header checksum )
 0x2 ALLOT0  ( Unused Global checksum )
 
 ( Start Collapse OS at 0x14F )
-\ 0x14f BIN( !
-\ 470 LOAD ( LR35902 boot code )
+0x14f BIN( !
+470 474 LOADR ( LR35902 boot code )
 \ 210 227 LOADR ( forth low no BLK )
 \ ??? ??? LOADR ( serial PS/2 driver )
 \ 246 249 LOADR ( PS/2 Key system )
 \ 236 239 LOADR ( forth high )
 ( Reset the ORG pointer so that the resulting ROM binary starts at the start of the header )
 \ ORG @ 0x150 - ORG !
-
-
-DI,
-
-BEGIN,
-    rLY LDA(n),
-    144 CPi,
-JRC, AGAIN, ( Loop until rLY = 144 )
-
-A XORr, ( Reset A to 0 )
-rLCDC LD(n)A, ( Write A to rLCDC )
-
-( WRITE FONT TILES TO VRAM )
-( Write 0x20 chars offset )
-HL 0x9000 0x20 16 * + LDdn,
-DE HERE 1 + FontStart ! 0x0000 LDdn,
-( FontStart contains the address to be modified later )
-BC FontLength LDdn,
-
-BEGIN,
-    DE LDA(d), ( Grab font byte )
-    LD(HL+)A, ( Write to destination and inc )
-    DE INCd, ( Increment font pointer )
-    BC DECd, ( Dec count )
-    A B LDrr, ( Load B into A then compare )
-    C ORr,
-JRNZ, AGAIN, ( Loop until font copied )
-
-( WRITE STRING TO TILEMAP )
-HL 0x9800 LDdn,
-DE HERE 1 + HelloWorldStr ! 0x0000 LDdn,
-
-BEGIN,
-    DE LDA(d),
-    LD(HL+)A,
-    DE INCd,
-    A ANDr,
-JRNZ, AGAIN,
-
-A 0xe4 LDri,
-rBGP LD(n)A,
-
-A XORr,
-rSCY LD(n)A,
-rSCX LD(n)A,
-
-rNR52 LD(n)A,
-
-A 0x81 LDri,
-rLCDC LD(n)A,
-
-BEGIN,
-JR, AGAIN,
-
-PC HelloWorldStr @ !
-," COLLAPSE OS-SOON ;)" 0x00 C,
-PC FontStart @ !
-( Offset  )
-8 ALLOT0
-1 ALLOT0
-CPFNT5x7
